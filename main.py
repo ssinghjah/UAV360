@@ -264,7 +264,7 @@ def calculateMetric(thetaHPrime, thetaP, thetaPMean, thetaPStd, phiSPrime, phiNP
 def runSNRTest():
     bestMetrics = []
     bestParameterCombinations = []
-    snrs = np.arange(0, 30, 1)
+    snrs = np.arange(0, 15, 0.5)
     pilotViewingDirections = generatePilotViewingAngles(len(snrs))
     #pilotViewingDirections = [[33.98, 0], [-10.75, -39.1]]
     phiPHistory = []
@@ -366,11 +366,13 @@ def evaluateResults(parameters, pilotViewingAngles):
     return evaluationMetrics
 
 def main():
-    #bestMetrics, bestParameters, pilotViewingAngles, snrs = runSNRTest()
-    bestMetrics, bestParameters = run()
-    writeCSV('./Results/bestMetrics_Alpha' + str(ALPHA) + '_' + str(time.time()) + '.csv', bestMetrics)
-    writeCSV('./Results/bestParameters_Alpha' + str(ALPHA) + '_' + str(time.time()) + '.csv', bestParameters)
-    #writeCSV('./Results/snrs_Alpha' + str(ALPHA) + '_' + str(time.time()) + '.csv', snrs)
+    bestMetrics, bestParameters, pilotViewingAngles, snrs = runSNRTest()
+    #bestMetrics, bestParameters = run()
+    resultsDir = './Results/' + str(time.time()) + '/'
+    os.mkdir(resultsDir)
+    writeCSV(resultsDir +  'bestMetrics_Alpha' + str(ALPHA) + '.csv', bestMetrics)
+    writeCSV(resultsDir + 'bestParameters_Alpha' + str(ALPHA) + '.csv', bestParameters)
+    writeCSV(resultsDir + 'snrs_Alpha' + str(ALPHA) + '.csv', snrs)
     # evaluationMetrics = evaluateResults(bestParameters, pilotViewingAngles)
     # writeCSV('evalMetrics_Alpha' + str(ALPHA) + '_' + str(time.time()) + '.csv', bestMetrics)
 
