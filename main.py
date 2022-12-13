@@ -20,16 +20,16 @@ PHI_N = 10.0
 PHI_S = -70.0
 P_PHI = 0.2
 #BS_LOCATIONs = [ [500, 250, 0],  [500, 250, 0], [500, 500, 0],  [500, 750, 0]]
-BS_LOCATIONs = [[0, 250, 0], [0, 500, 0], [0, 750, 0], [0, 1000, 0],
-                [250, 250, 0], [250, 500, 0], [250, 750, 0], [250, 1000, 0],
-                [500, 250, 0], [500, 500, 0], [500, 750, 0], [500, 1000, 0],
-                [750, 250, 0], [750, 500, 0], [750, 750, 0], [750, 1000, 0],
-                [1000, 250, 0],  [1000, 250, 0], [1000, 500, 0], [1000, 750, 0]]
+BS_LOCATIONs = [[0, 250, 10], [0, 500, 10], [0, 750, 10], [0, 1000, 10],
+                [250, 250, 10], [250, 500, 10], [250, 750, 10], [250, 1000, 10],
+                [500, 250, 10], [500, 500, 10], [500, 750, 10], [500, 1000, 10],
+                [750, 250, 10], [750, 500, 10], [750, 750, 10], [750, 1000, 10],
+                [1000, 250, 10],  [1000, 250, 10], [1000, 500, 10], [1000, 750, 10]]
 QPs = [10, 20, 40, 50]
-Ms = [2, 4, 8, 16, 32]
-ALPHA = 0.80
+Ms = [2, 4, 16, 64, 256]
+ALPHA = 0.95
 NOISE_SPECTRAL_DENSITY = 1.380649*10.0**(-23.0)*298;
-B = float(400e6)
+B = float(400*10e6)
 P_UAV = 1
 
 FR_H = 1080
@@ -157,15 +157,18 @@ def generatePLs(uavPositions):
     return pls, assocBSs
 
 def logParameters(folderName):
-    logStr = "FPS = " + str(FPS) \
-             + "\n Bandwidth  = " + str(B) \
-             + "\n P_UAV = " + str(P_UAV) \
-             + "\n THETA_H_PRIMES = " + str(THETA_H_PRIMES) \
-             + "\n PHI_N_PRIMES = " + str(PHI_N_PRIMES) \
-             + "\n PHI_S_PRIMES = " + str(PHI_S_PRIMES) \
-             + "\n QPs = " + str(QPs) \
-             + "\n Ms = " + str(Ms) \
-             + "\n ALPHA = " + str(ALPHA)
+    logStr = "FPS = " + str(FPS)  \
+            + "\n Center freq  = " + str(CENTER_FREQ) \
+            + "\n Bandwidth  = " + str(B) \
+            + "\n P_UAV = " + str(P_UAV) \
+            + "\n THETA_H_PRIMES = " + str(THETA_H_PRIMES) \
+            + "\n PHI_N_PRIMES = " + str(PHI_N_PRIMES) \
+            + "\n PHI_S_PRIMES = " + str(PHI_S_PRIMES) \
+            + "\n QPs = " + str(QPs) \
+            + "\n Ms = " + str(Ms) \
+            + "\n Center weight = " + str(CENTRAL_WEIGHT)\
+            + "\n Peripheral weight = " + str(PERIPHERAL_WEIGHT) \
+            + "\n Outside Peripheral Weight = " + str(OUTSIDE_PERIPHERAL_WEIGHT)
 
     with open(folderName + "parameters.txt", "w") as f:
         f.write(logStr)
@@ -211,7 +214,7 @@ def calculateSNR(pathLoss, txPower):
     noise = B*(NOISE_SPECTRAL_DENSITY)
     signal = float(txPower/pathLoss)
     snr = signal / noise
-    return
+    return snr
 
 def getAreaInside(rectangle, boundary):
     xMinInside = max(rectangle[0], boundary[0])
@@ -283,7 +286,7 @@ def calculateMetric(thetaHPrime, thetaP, thetaPMean, thetaPStd, phiSPrime, phiNP
 def runSNRTest():
     bestMetrics = []
     bestParameterCombinations = []
-    snrs = np.arange(0, 30, 1)
+    snrs = np.arange(0, 20, 0.5) # dB
     pilotViewingDirections = generatePilotViewingAngles(len(snrs))
     #pilotViewingDirections = [[33.98, 0], [-10.75, -39.1]]
     phiPHistory = []
@@ -294,6 +297,7 @@ def runSNRTest():
     thetaPStd = 0
     phiPStd = 0
     for snr in snrs:
+        snr = 10.0 ** (0.1 * snr)
         pilotViewingAngle = pilotViewingDirections[tick]
         thetaP = pilotViewingAngle[0]
         phiP = pilotViewingAngle[1]
@@ -362,7 +366,7 @@ def writeCSV(fName, dataArr):
     with open(fName, 'w', newline='\n') as csvfile:
         writer = csv.writer(csvfile)
         for data in dataArr:
-            writer.write(data)
+            writer.writerow([data])
 
 def evaluateResults(parameters, pilotViewingAngles):
     numTicks = len(parameters)
