@@ -6,11 +6,12 @@ import sys
 import qpModels
 import time
 import csv
+import os
 
 CENTER_FREQ = 28*10^9
 BS_LOCATIONs = []
 #NOISE_SIGMA = 
-FPS = 60 # frames per second
+FPS = 30 # frames per second
 VELOCITY = 5 # meters per second
 UAV_START = [0, 0, 50]
 UAV_END = [1000, 1000, 25]
@@ -26,7 +27,7 @@ BS_LOCATIONs = [[0, 250, 0], [0, 500, 0], [0, 750, 0], [0, 1000, 0],
                 [1000, 250, 0],  [1000, 250, 0], [1000, 500, 0], [1000, 750, 0]]
 QPs = [10, 20, 40, 50]
 Ms = [2, 4, 8, 16, 32]
-ALPHA = 0.90
+ALPHA = 0.80
 NOISE_SPECTRAL_DENSITY = 1.380649*10.0**(-23.0)*298;
 B = float(400e6)
 P_UAV = 1
@@ -34,8 +35,8 @@ P_UAV = 1
 FR_H = 1080
 FR_W = 1920
 
-FOV_THETA = 190
-FOV_PHI = 120
+# FOV_THETA = 190
+# FOV_PHI = 120
 
 FOV_CENTRAL_THETA_E = 30
 FOV_CENTRAL_THETA_W = -30
@@ -46,8 +47,8 @@ FOV_PERIPHERAL_THETA_W = -60
 FOV_PERIPHERAL_PHI_N = 60
 FOV_PERIPHERAL_PHI_S = -75
 
-CENTRAL_WEIGHT = 0.65
-PERIPHERAL_WEIGHT = 0.30
+CENTRAL_WEIGHT = 0.75
+PERIPHERAL_WEIGHT = 0.20
 OUTSIDE_PERIPHERAL_WEIGHT = 0.05
 
 METRIC_FOV_WEIGHT = 0.95
@@ -55,8 +56,8 @@ GAUSSIAN_MINIMUM = 100
 MAX_VIEWING_ANGLE_CHANGE = 120 # per second
 
 THETA_H_PRIMES = np.arange(15, 180, 15)
-PHI_N_PRIMES = np.arange(15, 180, 15)
-PHI_S_PRIMES = np.arange(-180, -15, 15)
+PHI_N_PRIMES = np.arange(15, 90, 15)
+PHI_S_PRIMES = np.arange(-90, -15, 15)
 
 def qFunc(arg):
     qVal = 0.5*special.erfc(arg/math.sqrt(2))
@@ -79,7 +80,11 @@ def generatePilotViewingAngles(ticks):
     prevPhi = 0
     for tickNum in range(ticks):
         theta = np.random.normal(0, sigmaH)
+        while math.fabs(theta) > 180:
+            theta = np.random.normal(0, sigmaH)
         phi = generatePhi()
+        while math.fabs(phi) > 90:
+            phi = generatePhi()
         #pilotViewingDirections.append([theta, phi])
         pilotViewingDirections.append([0, 0])
     return pilotViewingDirections
@@ -150,6 +155,20 @@ def generatePLs(uavPositions):
         pls.append(minPl)
         assocBSs.append(assocBS)
     return pls, assocBSs
+
+def logParameters(folderName):
+    logStr = "FPS = " + str(FPS) \
+             + "\n Bandwidth  = " + str(B) \
+             + "\n P_UAV = " + str(P_UAV) \
+             + "\n THETA_H_PRIMES = " + str(THETA_H_PRIMES) \
+             + "\n PHI_N_PRIMES = " + str(PHI_N_PRIMES) \
+             + "\n PHI_S_PRIMES = " + str(PHI_S_PRIMES) \
+             + "\n QPs = " + str(QPs) \
+             + "\n Ms = " + str(Ms) \
+             + "\n ALPHA = " + str(ALPHA)
+
+    with open(folderName + "parameters.txt", "w") as f:
+        f.write(logStr)
 
 def getUAVHeading():
     pass
@@ -264,7 +283,7 @@ def calculateMetric(thetaHPrime, thetaP, thetaPMean, thetaPStd, phiSPrime, phiNP
 def runSNRTest():
     bestMetrics = []
     bestParameterCombinations = []
-    snrs = np.arange(0, 15, 0.5)
+    snrs = np.arange(0, 30, 1)
     pilotViewingDirections = generatePilotViewingAngles(len(snrs))
     #pilotViewingDirections = [[33.98, 0], [-10.75, -39.1]]
     phiPHistory = []
@@ -342,7 +361,8 @@ def runSNRTest():
 def writeCSV(fName, dataArr):
     with open(fName, 'w', newline='\n') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(dataArr)
+        for data in dataArr:
+            writer.write(data)
 
 def evaluateResults(parameters, pilotViewingAngles):
     numTicks = len(parameters)
@@ -352,7 +372,6 @@ def evaluateResults(parameters, pilotViewingAngles):
         tickNum += 1
         if len(parameter) == 0:
             continue
-
         pilotViewingAngle = pilotViewingAngles[tickNum]
         qualI = parameter[2]
         qualO = parameter[3]
@@ -366,16 +385,16 @@ def evaluateResults(parameters, pilotViewingAngles):
     return evaluationMetrics
 
 def main():
-    bestMetrics, bestParameters, pilotViewingAngles, snrs = runSNRTest()
-    #bestMetrics, bestParameters = run()
     resultsDir = './Results/' + str(time.time()) + '/'
     os.mkdir(resultsDir)
-    writeCSV(resultsDir +  'bestMetrics_Alpha' + str(ALPHA) + '.csv', bestMetrics)
+    logParameters(resultsDir)
+    bestMetrics, bestParameters, pilotViewingAngles, snrs = runSNRTest()
+    #bestMetrics, bestParameters = run()
+    writeCSV(resultsDir + 'bestMetrics_Alpha' + str(ALPHA) + '.csv', bestMetrics)
     writeCSV(resultsDir + 'bestParameters_Alpha' + str(ALPHA) + '.csv', bestParameters)
     writeCSV(resultsDir + 'snrs_Alpha' + str(ALPHA) + '.csv', snrs)
     # evaluationMetrics = evaluateResults(bestParameters, pilotViewingAngles)
     # writeCSV('evalMetrics_Alpha' + str(ALPHA) + '_' + str(time.time()) + '.csv', bestMetrics)
-
 
     
 def run():
