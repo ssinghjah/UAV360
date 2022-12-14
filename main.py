@@ -8,7 +8,7 @@ import time
 import csv
 import os
 
-CENTER_FREQ = 28*10^9
+CENTER_FREQ = 28*(10.0**9.0)
 BS_LOCATIONs = []
 #NOISE_SIGMA = 
 FPS = 30 # frames per second
@@ -19,14 +19,37 @@ THETA_H = 100.0
 PHI_N = 10.0
 PHI_S = -70.0
 P_PHI = 0.2
+BS_X_SPACING = 50
+BS_Y_SPACING = 50
+BS_HEIGHT = 10
+SIM_X_END = 1000
+SIM_Y_END = 1000
+
+bsX = 0
+bsY = 0
+
+BS_LOCATIONs = []
+while bsX <= SIM_X_END:
+    bsY = 0
+    while bsY <= SIM_Y_END:
+        BS_LOCATIONs.append([bsX, bsY, BS_HEIGHT])
+        bsY += BS_Y_SPACING
+    bsX += BS_X_SPACING
+
+
+
 #BS_LOCATIONs = [ [500, 250, 0],  [500, 250, 0], [500, 500, 0],  [500, 750, 0]]
-BS_LOCATIONs = [[0, 250, 10], [0, 500, 10], [0, 750, 10], [0, 1000, 10],
-                [250, 250, 10], [250, 500, 10], [250, 750, 10], [250, 1000, 10],
-                [500, 250, 10], [500, 500, 10], [500, 750, 10], [500, 1000, 10],
-                [750, 250, 10], [750, 500, 10], [750, 750, 10], [750, 1000, 10],
-                [1000, 250, 10],  [1000, 250, 10], [1000, 500, 10], [1000, 750, 10]]
+# BS_LOCATIONs = [[0, 250, 10], [0, 500, 10], [0, 750, 10], [0, 1000, 10],
+#                 [250, 250, 10], [250, 500, 10], [250, 750, 10], [250, 1000, 10],
+#                 [500, 250, 10], [500, 500, 10], [500, 750, 10], [500, 1000, 10],
+#                 [750, 250, 10], [750, 500, 10], [750, 750, 10], [750, 1000, 10],
+#                 [1000, 250, 10],  [1000, 250, 10], [1000, 500, 10], [1000, 750, 10]]
 QPs = [10, 20, 40, 50]
+# QPs = [20]
 Ms = [2, 4, 16, 64, 256]
+#Ms = [16]
+
+
 ALPHA = 0.95
 NOISE_SPECTRAL_DENSITY = 1.380649*10.0**(-23.0)*298;
 B = float(400*10e6)
@@ -59,6 +82,11 @@ THETA_H_PRIMES = np.arange(15, 180, 15)
 PHI_N_PRIMES = np.arange(15, 90, 15)
 PHI_S_PRIMES = np.arange(-90, -15, 15)
 
+# THETA_H_PRIMES = [60]
+# PHI_N_PRIMES = [60]
+# PHI_S_PRIMES = [-75]
+
+
 def qFunc(arg):
     qVal = 0.5*special.erfc(arg/math.sqrt(2))
     return qVal
@@ -85,8 +113,8 @@ def generatePilotViewingAngles(ticks):
         phi = generatePhi()
         while math.fabs(phi) > 90:
             phi = generatePhi()
-        #pilotViewingDirections.append([theta, phi])
-        pilotViewingDirections.append([0, 0])
+        pilotViewingDirections.append([theta, phi])
+        #pilotViewingDirections.append([0, 0])
     return pilotViewingDirections
 
 def evaluate(qualI, qualO, phiSPrime, phiNPrime, thetaHPrime, thetaP, phiP):
@@ -116,6 +144,27 @@ def evaluate(qualI, qualO, phiSPrime, phiNPrime, thetaHPrime, thetaP, phiP):
 
     return metric
 
+
+def readCSV(fName, dataType=float):
+    data = []
+    with open(fName, "r") as f:
+        csvReader = csv.reader(f, delimiter = ",")
+        for row in csvReader:
+            if len(row) > 1:
+                lineList = []
+                for element in row:
+                    lineList.append(dataType(element))
+                data.append(lineList)
+            else:
+                data.append(dataType(row[0]))
+    return data
+
+
+# def readPLs(fName):
+#     pls = readCSV(fName)
+#     return pls
+
+
 def generatePLs(uavPositions):
     pls = []
     assocBSs = []
@@ -141,10 +190,10 @@ def generatePLs(uavPositions):
             else:
                 # calculate path loss using reflection and diffraction params
                 A = 2.999 
-                B = -0.07
+                B = -0.067
                 SIGMA = 3.60
             d = get3DDist(uavPosition, bsLocation)
-            pl = 32.4 + 20*math.log10(CENTER_FREQ) + 10*A*(uavHeight**B)*math.log10(d)
+            pl = 32.4 + 20*math.log10(CENTER_FREQ/1e9) + 10*A*(uavHeight**B)*math.log10(d)
             xFading = np.random.uniform(0, SIGMA)
             pl += xFading
             if pl < minPl:
@@ -160,8 +209,9 @@ def logParameters(folderName):
     logStr = "FPS = " + str(FPS)  \
             + "\n Center freq  = " + str(CENTER_FREQ) \
             + "\n Bandwidth  = " + str(B) \
-            + "\n P_UAV = " + str(P_UAV) \
-            + "\n THETA_H_PRIMES = " + str(THETA_H_PRIMES) \
+            + "\n P_UAV = " + str(P_UAV)\
+             + "\n Alpha = " + str(ALPHA)\
+             + "\n THETA_H_PRIMES = " + str(THETA_H_PRIMES) \
             + "\n PHI_N_PRIMES = " + str(PHI_N_PRIMES) \
             + "\n PHI_S_PRIMES = " + str(PHI_S_PRIMES) \
             + "\n QPs = " + str(QPs) \
@@ -286,7 +336,7 @@ def calculateMetric(thetaHPrime, thetaP, thetaPMean, thetaPStd, phiSPrime, phiNP
 def runSNRTest():
     bestMetrics = []
     bestParameterCombinations = []
-    snrs = np.arange(0, 20, 0.5) # dB
+    snrs = np.arange(0, 40, 0.5) # dB
     pilotViewingDirections = generatePilotViewingAngles(len(snrs))
     #pilotViewingDirections = [[33.98, 0], [-10.75, -39.1]]
     phiPHistory = []
@@ -366,7 +416,7 @@ def writeCSV(fName, dataArr):
     with open(fName, 'w', newline='\n') as csvfile:
         writer = csv.writer(csvfile)
         for data in dataArr:
-            writer.writerow([data])
+            writer.writerow(data)
 
 def evaluateResults(parameters, pilotViewingAngles):
     numTicks = len(parameters)
@@ -392,11 +442,11 @@ def main():
     resultsDir = './Results/' + str(time.time()) + '/'
     os.mkdir(resultsDir)
     logParameters(resultsDir)
-    bestMetrics, bestParameters, pilotViewingAngles, snrs = runSNRTest()
-    #bestMetrics, bestParameters = run()
+    #bestMetrics, bestParameters, pilotViewingAngles, snrs = runSNRTest()
+    bestMetrics, bestParameters = run()
     writeCSV(resultsDir + 'bestMetrics_Alpha' + str(ALPHA) + '.csv', bestMetrics)
     writeCSV(resultsDir + 'bestParameters_Alpha' + str(ALPHA) + '.csv', bestParameters)
-    writeCSV(resultsDir + 'snrs_Alpha' + str(ALPHA) + '.csv', snrs)
+    # writeCSV(resultsDir + 'snrs_Alpha' + str(ALPHA) + '.csv', snrs)
     # evaluationMetrics = evaluateResults(bestParameters, pilotViewingAngles)
     # writeCSV('evalMetrics_Alpha' + str(ALPHA) + '_' + str(time.time()) + '.csv', bestMetrics)
 
@@ -404,8 +454,15 @@ def main():
 def run():
     uavPositions = generatePositions(VELOCITY)
     numTicks = len(uavPositions)
-    pls, associatedBSs = generatePLs(uavPositions)
-    pilotViewingAngles = generatePilotViewingAngles(numTicks)
+    #ls, associatedBSs = generatePLs(uavPositions)
+    # pilotViewingAngles = readCSV("pilotViewingAngles.csv")
+    #writeCSV("pls.csv", pls)
+    #writeCSV("associatedBSs.csv", associatedBSs)
+    pls = readCSV("pls.csv")
+    associatedBSs = readCSV("associatedBSs.csv", int)
+    #pilotViewingAngles = generatePilotViewingAngles(numTicks)
+    #writeCSV("pilotViewingAngles.csv", pilotViewingAngles)
+    pilotViewingAngles = readCSV("pilotViewingAngles.csv")
     metrics = []
     bestParams = []
     for tick in range(numTicks):
@@ -413,15 +470,17 @@ def run():
         print(tick)
         bestMetric = -1
         bestParameterCombination = None
+        thetaP = pilotViewingAngles[tick][0]
+        phiP = pilotViewingAngles[tick][1]
         for thetaHPrime in THETA_H_PRIMES:
-            thetaHPrime
+            #print(thetaHPrime)
             for phiNPrime in PHI_N_PRIMES:
-                phiNPrime
+                #print(phiNPrime)
                 for phiSPrime in PHI_S_PRIMES:
                     pixelsInside = (2.0*thetaHPrime*FR_W/360.0)*(math.fabs(phiNPrime - phiSPrime)/180.0)
                     pixelsOutside = FR_H*FR_W - pixelsInside
                     for qpi in QPs:
-                        for qpo in QPs + [math.inf]:
+                        for qpo in QPs:
                             percFrLenI = qpModels.getPercentile("MiamiCity", qpi, "FrameSizes", ALPHA)*(pixelsInside)/(pixelsOutside + pixelsInside)*10.0**3.0*8
                             percFrLenO = qpModels.getPercentile("MiamiCity", qpo, "FrameSizes", ALPHA)*(pixelsOutside)/(pixelsOutside + pixelsInside)*10.0**3.0*8
                             percQualI = qpModels.getPercentile("MiamiCity", qpi, "FrameQualities", ALPHA)
@@ -447,7 +506,7 @@ def run():
                                     if prReceived <= ALPHA:
                                         continue
 
-                                    metric = calculateMetric(thetaHPrime, phiSPrime, phiNPrime, percQualI, percQualO)
+                                    metric = calculateMetric(thetaHPrime, thetaP, 0, 0, phiSPrime, phiNPrime, phiP, 0, 0, percQualI, percQualO)
                                     if metric > bestMetric:
                                         bestMetric = metric
                                         bestParameterCombination = [thetaHPrime, phiNPrime, phiSPrime, qpi, qpo, mi, mo]
