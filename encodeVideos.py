@@ -57,7 +57,7 @@ for locationName in SourceFiles:
         
     for qp in QPs:
         # Re-encode at all QPs
-        os.system('x265 --tune zerolatency  --input ' + SOURCE_FOLDER + '/' + locationName + '.yuv --output ' + ENCODED_FOLDER + '/' + locationName + '_' + str(qp) + '.mp4 --fps ' + str(fps) +  ' --input-res ' + resolution +  ' --qp ' + str(qp) + ' --keyint ' + str(GOP) + ' --min-keyint '+ str(GOP))
+        os.system('x265 --tune zerolatency  --input ' + SOURCE_FOLDER + '/' + locationName + '.yuv -video_size' + resolution + ' --output ' + ENCODED_FOLDER + '/' + locationName + '_' + str(qp) + '.mp4 --fps ' + str(fps) +  ' --input-res ' + resolution +  ' --qp ' + str(qp) + ' --keyint ' + str(GOP) + ' --min-keyint '+ str(GOP))
 
         # Calculate PSNR metric
         os.system('ffmpeg -i ' + ENCODED_FOLDER + '/' +  locationName + '_' + str(qp)  + '.mp4 -i ' + SOURCE_FOLDER + '/' + locationName + '.yuv -lavfi psnr=stats_file=' + METADATA_FOLDER + '/' + locationName + '_psnr_' + str(qp)  + '.txt -f null -')
