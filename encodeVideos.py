@@ -1,11 +1,10 @@
 import os
 import ffmpeg
 
-# Define GoP
-GoP = 30
-
 # List of all source videos
-SourceFiles = ['DetianFalls_4K']
+#SourceFiles = ['Armenia_8K_Trim', 'Hawaii_8K_Trim', 'HollandWidmill_4K_Trim', 'HuangshanChina_8K_Trim', 'Jerusalem_8K_Trim', 'Tokyo_8K_Trim', 'Zurich_4K_Trim']
+
+SourceFiles = ['HollandWindmill_4K_Trim']
 
 # List of QP values
 QPs = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
@@ -15,11 +14,10 @@ Metrics = []
 
 GOP = 50
 
-SOURCE_FOLDER = './Source'
-ENCODED_FOLDER = './Encoded'
-METADATA_FOLDER = './MetaData'
+SOURCE_FOLDER = '/home/Source'
+ENCODED_FOLDER = '/home/Encoded'
+METADATA_FOLDER = '/home/MetaData'
 FORMATs = ['.mp4', '.webm', '.yuv']
-
 
 def getResolutionFPS(probe):
     resolution = ''
@@ -57,7 +55,7 @@ for locationName in SourceFiles:
         
     for qp in QPs:
         # Re-encode at all QPs
-        os.system('x265 --tune zerolatency  --input ' + SOURCE_FOLDER + '/' + locationName + '.yuv -video_size' + resolution + ' --output ' + ENCODED_FOLDER + '/' + locationName + '_' + str(qp) + '.mp4 --fps ' + str(fps) +  ' --input-res ' + resolution +  ' --qp ' + str(qp) + ' --keyint ' + str(GOP) + ' --min-keyint '+ str(GOP))
+        os.system('x265 --tune zerolatency  --input ' + SOURCE_FOLDER + '/' + locationName + '.yuv --output ' + ENCODED_FOLDER + '/' + locationName + '_' + str(qp) + '.mp4 --fps ' + str(fps) +  ' --input-res ' + resolution +  ' --qp ' + str(qp) + ' --keyint ' + str(GOP) + ' --min-keyint '+ str(GOP))
 
         # Calculate PSNR metric
         os.system('ffmpeg -i ' + ENCODED_FOLDER + '/' +  locationName + '_' + str(qp)  + '.mp4 -i ' + SOURCE_FOLDER + '/' + locationName + '.yuv -lavfi psnr=stats_file=' + METADATA_FOLDER + '/' + locationName + '_psnr_' + str(qp)  + '.txt -f null -')
@@ -65,3 +63,4 @@ for locationName in SourceFiles:
         # display byte size of all frames
         fPath = ENCODED_FOLDER + '/' + locationName + '_' + str(qp) + '.mp4'
         os.system('ffprobe ' + fPath + ' -v error -select_streams V:0 -show_entries "frame=pict_type,pkt_size" -of csv=p=0 >' + METADATA_FOLDER  + '/frameInfo_' + locationName + '_' + str(qp) + '.csv')
+    #os.system("rm -r " + yuvFile)
