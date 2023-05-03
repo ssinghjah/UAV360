@@ -1,11 +1,16 @@
 import os
 import ffmpeg
 
+
 # Define GoP
 GoP = 30
 
 # List of all source videos
 SourceFiles = ['DetianFalls_4K']
+
+# List of all source videos
+#SourceFiles = ['Armenia_8K_Trim', 'Hawaii_8K_Trim', 'HollandWidmill_4K_Trim', 'HuangshanChina_8K_Trim', 'Jerusalem_8K_Trim', 'Tokyo_8K_Trim', 'Zurich_4K_Trim']
+
 
 # List of QP values
 QPs = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
@@ -15,10 +20,13 @@ Metrics = []
 
 GOP = 50
 
+
 SOURCE_FOLDER = './Source'
 ENCODED_FOLDER = './Encoded'
 METADATA_FOLDER = './MetaData'
 FORMATs = ['.mp4', '.webm', '.yuv']
+
+
 
 
 def getResolutionFPS(probe):
@@ -65,3 +73,7 @@ for locationName in SourceFiles:
         # display byte size of all frames
         fPath = ENCODED_FOLDER + '/' + locationName + '_' + str(qp) + '.mp4'
         os.system('ffprobe ' + fPath + ' -v error -select_streams V:0 -show_entries "frame=pict_type,pkt_size" -of csv=p=0 >' + METADATA_FOLDER  + '/frameInfo_' + locationName + '_' + str(qp) + '.csv')
+
+
+    #os.system("rm -r " + yuvFile)
+
