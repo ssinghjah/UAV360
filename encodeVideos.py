@@ -58,7 +58,7 @@ for locationName in SourceFiles:
         os.system('x265 --tune zerolatency  --input ' + SOURCE_FOLDER + '/' + locationName + '.yuv --output ' + ENCODED_FOLDER + '/' + locationName + '_' + str(qp) + '.mp4 --fps ' + str(fps) +  ' --input-res ' + resolution +  ' --qp ' + str(qp) + ' --keyint ' + str(GOP) + ' --min-keyint '+ str(GOP))
 
         # Calculate PSNR metric
-        os.system('ffmpeg -i ' + ENCODED_FOLDER + '/' +  locationName + '_' + str(qp)  + '.mp4 -s ' + resolution + ' -i ' + SOURCE_FOLDER + '/' + locationName + '.yuv -s ' + resolution + ' -lavfi psnr=stats_file=' + METADATA_FOLDER + '/' + locationName + '_psnr_' + str(qp)  + '.txt -f null -')
+        os.system('ffmpeg -i ' + ENCODED_FOLDER + '/' +  locationName + '_' + str(qp)  + '.mp4 -s ' + resolution + ' -i ' + ENCODED_FOLDER + '/' + locationName + '_0.mp4 -lavfi psnr=stats_file=' + METADATA_FOLDER + '/' + locationName + '_psnr_' + str(qp)  + '.txt -f null -')
     
         # display byte size of all frames
         fPath = ENCODED_FOLDER + '/' + locationName + '_' + str(qp) + '.mp4'
