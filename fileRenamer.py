@@ -8,10 +8,18 @@ for (dirpath, dirnames, filenames) in walk(FOLDER):
             newFileName = fileName.replace("_4K_Trim_", "_")
             print(newFileName)
             os.rename(FOLDER + fileName, FOLDER + newFileName)
-        if '_8K_Trim_' in fileName:
+        elif '_8K_Trim_' in fileName:
             newFileName = fileName.replace("_8K_Trim_", "_")
             print(newFileName)
             os.rename(FOLDER + fileName, FOLDER + newFileName)
-        
+        elif '_Trim_' in fileName:
+            newFileName = fileName.replace("_Trim_", "_")
+            print(newFileName)
+            os.rename(FOLDER + fileName, FOLDER + newFileName)
+        elif 'LakeShibara' in fileName:
+            newFileName = fileName.replace("LakeShibara", "LakeHibara")
+            print(newFileName)
+            os.rename(FOLDER + fileName, FOLDER + newFileName)
+
 
 

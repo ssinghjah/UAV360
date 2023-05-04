@@ -370,13 +370,13 @@ def calculateMetric(thetaHPrime, thetaP, thetaPMean, thetaPStd, phiSPrime, phiNP
 def runSNRTest():
     bestMetrics = []
     bestParameterCombinations = []
-    snrs = np.arange(0, 40, 0.5) # dB
+    snrs = np.arange(0, 40, 1.0) # dB
     snrsStretched = []
     for snr in snrs:
         for i in range(30):
             snrsStretched.append(snr)
 
-    pilotViewingDirections = generatePilotViewingAngles(len(snrs))
+    pilotViewingDirections = generatePilotViewingAngles(len(snrsStretched))
     #pilotViewingDirections = [[33.98, 0], [-10.75, -39.1]]
     phiPHistory = []
     thetaPHistory = []

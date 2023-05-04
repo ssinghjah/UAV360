@@ -11,13 +11,15 @@ def writeCSVFile(csvFileName, data):
         writer.writerow(data)
 
 PSNR_INF = 250
-folder = './Results/MetaData/'
-videoFNames = ['Lucerne_4K_Trim', 'LakeShibara_8K_Trim']
+sourceFolder = './Results/MetaData/'
+videoFNames = ['Lucerne_4K_Trim', 'Chicago_Trim', 'BryanskForest_8K_Trim', 'LakeShibara_8K_Trim']
 QPs = [10, 15, 20, 25, 30, 35, 40, 45, 50]
+destFolder = "./Results/Models/"
+'''
 for videoFName in videoFNames:
     qpMeans = []
     for QP in QPs:
-        fPath = folder + videoFName + '_psnr_' + str(QP) + '.txt'
+        fPath = sourceFolder + videoFName + '_psnr_' + str(QP) + '.txt'
         qpPSNRs = []
         # read file
         with open(fPath) as f:
@@ -30,22 +32,24 @@ for videoFName in videoFNames:
                 #if not math.isinf(psnr):
                 #    qpPSNRs.append(psnr)
 
-            writeCSVFile(folder + videoFName + '_frameSNRs_QP_' + str(QP) + '.csv', qpPSNRs)
-
+            writeCSVFile(destFolder + videoFName + '_frameSNRs_QP_' + str(QP) + '.csv', qpPSNRs)
+'''
 
 for videoFName in videoFNames:
     qpMeans = []
     for QP in QPs:
-        fPath = folder + 'frameInfo_' + videoFName + '_' + str(QP) + '.csv'
+        fPath = sourceFolder + 'frameInfo_' + videoFName + '_' + str(QP) + '.csv'
         qpFrameLens = []
-
+        print(fPath)
         # read file
         with open(fPath) as f:
-            reader = csv.reader(fPath)
+            reader = csv.reader(f)
             for line in enumerate(reader):
-                frameLen = float(line[0])
-                qpFrameLens.append(frameLen)
-            writeCSVFile(folder + videoFName + '_frameSizes_QP_' + str(QP) + '.csv', qpPSNRs)
+                print(line)
+                if len(line[1]) >= 2:
+                    frameLen = float(line[1][0])
+                    qpFrameLens.append(frameLen)
+            writeCSVFile(destFolder + videoFName + '_frameSizes_QP_' + str(QP) + '.csv', qpFrameLens)
 
         '''
         qpMeans.append(np.mean(qpPSNRs))
@@ -56,5 +60,3 @@ for videoFName in videoFNames:
             # write a row to the csv file
             writer.writerow(qpMeans)
         '''
-        
-

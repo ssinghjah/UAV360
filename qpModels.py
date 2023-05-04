@@ -6,9 +6,9 @@ import numpy as np
 Data = {}
 
 QPs = np.arange(10, 55, 5)
-Locations = ["LakeShibara"]
+Locations = ["Chicago"]
 RootPath = "./Results/Models/"
-LOCATION = "LakeShibara"
+LOCATION = "Chicago"
 
 def readCSV(fileName):
     csvData = []
@@ -43,7 +43,6 @@ def fillDataStructure():
             qpInfoObject = {"FrameSizes": frameSizes, "FrameQualities": frameQuals}
             Data[location][qp] = qpInfoObject
 
-
 def getPercentile(qp, measurement, percentile):
     if math.isinf(qp):
         return 0
@@ -52,6 +51,13 @@ def getPercentile(qp, measurement, percentile):
     measurements.sort()
     index = math.ceil(len(measurements)*percentile)
     value = measurements[index]
+    return value
+
+def getExpectedValue(qp, measurement, percentile):
+    if math.isinf(qp):
+        return 0
+    qpInfo = Data[LOCATION][qp]
+    measurements = qpInfo[measurement]
     value = np.mean(measurements)
     return value
 
