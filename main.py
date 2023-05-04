@@ -44,7 +44,7 @@ while bsX <= SIM_X_END:
 #                 [1000, 250, 10],  [1000, 250, 10], [1000, 500, 10], [1000, 750, 10]]
 QPs = [10, 20, 40, 50]
 # QPs = [20]
-Ms = [2, 4, 16, 64, 256]
+Ms = [4, 16, 64, 256]
 #Ms = [16]
 
 
@@ -53,8 +53,8 @@ NOISE_SPECTRAL_DENSITY = 1.380649*10.0**(-23.0)*298;
 B = float(400*10e6)
 P_UAV = 1
 
-FR_H = 1080
-FR_W = 1920
+FR_H = 7680
+FR_W = 3840
 
 # FOV_THETA = 190
 # FOV_PHI = 120
@@ -79,6 +79,7 @@ MAX_VIEWING_ANGLE_CHANGE = 120 # per second
 THETA_H_PRIMES = np.arange(15, 180, 15)
 PHI_N_PRIMES = np.arange(15, 90, 15)
 PHI_S_PRIMES = np.arange(-90, -15, 15)
+CODE_RATE = 1/3
 
 # THETA_H_PRIMES = [60]
 # PHI_N_PRIMES = [60]
@@ -162,6 +163,19 @@ def readCSV(fName, dataType=float):
 #     pls = readCSV(fName)
 #     return pls
 
+def getMCS5G(snr):
+    M = 2
+    if snr < 4.2:
+        M = 4
+    elif snr < 10:
+        M = 16
+    elif snr < 20:
+        M = 64
+    else:
+        M = 256
+    return M
+        
+    
 
 def generatePLs(uavPositions):
     pls = []
@@ -240,6 +254,27 @@ def getBER2(channelSNR, mod):
     ber = 4 / n * (1 - math.sqrt(mod))*qFunc(qArg)
     return ber
 
+def getBER5GNR(snr, M):
+    ber = 1
+    deltaX = 0.4
+    deltaY = -3.7
+
+    if snr < -2:
+        ber = 1
+    else:
+        if M == 4:
+            xStart = -2.1
+        if M == 16:
+            xStart = 4
+        if M == 64:
+            xStart = 7.5 
+        if M == 256:
+            xStart = 12
+    
+        exponent = (snr - xStart)*(deltaY)/deltaX
+        ber = math.pow(10.0, exponent)    
+    return ber
+
 def getRateFromQP():
     pass
 
@@ -263,6 +298,7 @@ def calculateSNR(pathLoss, txPower):
     signal = float(txPower/pathLoss)
     snr = signal / noise
     return snr
+
 
 def getAreaInside(rectangle, boundary):
     xMinInside = max(rectangle[0], boundary[0])
@@ -335,6 +371,11 @@ def runSNRTest():
     bestMetrics = []
     bestParameterCombinations = []
     snrs = np.arange(0, 40, 0.5) # dB
+    snrsStretched = []
+    for snr in snrs:
+        for i in range(30):
+            snrsStretched.append(snr)
+
     pilotViewingDirections = generatePilotViewingAngles(len(snrs))
     #pilotViewingDirections = [[33.98, 0], [-10.75, -39.1]]
     phiPHistory = []
@@ -344,8 +385,9 @@ def runSNRTest():
     phiPMean = 0
     thetaPStd = 0
     phiPStd = 0
-    for snr in snrs:
-        snr = 10.0 ** (0.1 * snr)
+
+    for snr in snrsStretched:
+        snrNondB = 10.0 ** (0.1 * snr)
         pilotViewingAngle = pilotViewingDirections[tick]
         thetaP = pilotViewingAngle[0]
         phiP = pilotViewingAngle[1]
@@ -371,21 +413,24 @@ def runSNRTest():
                     pixelsOutside = FR_H*FR_W - pixelsInside
                     for qpi in QPs:
                         for qpo in QPs:
-                            percFrLenI = qpModels.getPercentile(qpi, "FrameSizes", ALPHA)*(pixelsInside)/(pixelsOutside + pixelsInside)*10.0**3.0*8
-                            percFrLenO = qpModels.getPercentile(qpo, "FrameSizes", ALPHA)*(pixelsOutside)/(pixelsOutside + pixelsInside)*10.0**3.0*8
-                            percQualI = qpModels.getPercentile(qpi, "FrameQualities", ALPHA)
-                            percQualO = qpModels.getPercentile(qpo, "FrameQualities", ALPHA)
+                            percFrLenI = qpModels.getExpectedValue(qpi, "FrameSizes", ALPHA)*(pixelsInside)/(pixelsOutside + pixelsInside)*10.0**3.0*8
+                            percFrLenO = qpModels.getExpectedValue(qpo, "FrameSizes", ALPHA)*(pixelsOutside)/(pixelsOutside + pixelsInside)*10.0**3.0*8
+                            percQualI = qpModels.getExpectedValue(qpi, "FrameQualities", ALPHA)
+                            percQualO = qpModels.getExpectedValue(qpo, "FrameQualities", ALPHA)
                             for mi in Ms:
                                 for mo in Ms:
-                                    ri = getDataRateFromMCS(mi)
-                                    ro = getDataRateFromMCS(mo)
+
+                                    ri = getDataRateFromMCS(mi)*CODE_RATE
+                                    ro = getDataRateFromMCS(mo)*CODE_RATE
+                                    
                                     FrLatency = percFrLenI/ri + percFrLenO/ro
+                                    
                                     if FrLatency >= 1.0/FPS:
                                         continue
-
+                                    
                                     # Check if FrLatency meets the constraint
-                                    berI = getBER(snr, ri, mi)
-                                    berO = getBER(snr, ro, mo)
+                                    berI = getBER5GNR(snr, mi)
+                                    berO = getBER5GNR(snr, mo)
 
                                     # Check if the probability of reception meets the constraint
                                     prReceived = ((1-berI)**percFrLenI)*((1-berO)**percFrLenO)
@@ -414,7 +459,7 @@ def writeCSV(fName, dataArr):
     with open(fName, 'w', newline='\n') as csvfile:
         writer = csv.writer(csvfile)
         for data in dataArr:
-            writer.writerow(data)
+            writer.writerow([data])
 
 def evaluateResults(parameters, pilotViewingAngles):
     numTicks = len(parameters)
@@ -440,10 +485,10 @@ def main():
     resultsDir = './Results/' + str(time.time()) + '/'
     os.mkdir(resultsDir)
     logParameters(resultsDir)
-    #bestMetrics, bestParameters, pilotViewingAngles, snrs = runSNRTest()
-    bestMetrics, bestParameters = run()
-    writeCSV(resultsDir + 'bestMetrics_Alpha' + str(ALPHA) + '.csv', bestMetrics)
-    writeCSV(resultsDir + 'bestParameters_Alpha' + str(ALPHA) + '.csv', bestParameters)
+    bestMetrics, bestParameters, pilotViewingAngles, snrs = runSNRTest()
+    #bestMetrics, bestParameters = run()
+    writeCSV(resultsDir + 'bestMetrics_Alpha_SNR_Test_Lucerne' + str(ALPHA) + '.csv', bestMetrics)
+    writeCSV(resultsDir + 'bestParameters_Alpha_SNR_Test_Lucerne' + str(ALPHA) + '.csv', bestParameters)
     # writeCSV(resultsDir + 'snrs_Alpha' + str(ALPHA) + '.csv', snrs)
     # evaluationMetrics = evaluateResults(bestParameters, pilotViewingAngles)
     # writeCSV('evalMetrics_Alpha' + str(ALPHA) + '_' + str(time.time()) + '.csv', bestMetrics)
