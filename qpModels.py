@@ -6,8 +6,9 @@ import numpy as np
 Data = {}
 
 QPs = np.arange(10, 55, 5)
-Locations = ["MiamiCity", "AngelFalls"]
-RootPath = "./Release/"
+Locations = ["LakeShibara"]
+RootPath = "./Results/Models/"
+LOCATION = "LakeShibara"
 
 def readCSV(fileName):
     csvData = []
@@ -29,33 +30,29 @@ def writeCSV(fName, dataArr):
         writer = csv.writer(csvfile)
         writer.writerows(dataArr)
 
-
 def fillDataStructure():
     for location in Locations:
         Data[location] = {}
         for qp in QPs:
             Data[location][qp] = {}
             # open file
-            fName = RootPath + location + "/frameSizes_QP_" + str(qp) + ".csv"
+            fName = RootPath + location + "_frameSizes_QP_" + str(qp) + ".csv"
             frameSizes = readCSV(fName)
-            fName = RootPath + location + "/frameSNRs_QP_" + str(qp) + ".csv"
+            fName = RootPath + location + "_frameSNRs_QP_" + str(qp) + ".csv"
             frameQuals = readCSV(fName)
             qpInfoObject = {"FrameSizes": frameSizes, "FrameQualities": frameQuals}
             Data[location][qp] = qpInfoObject
 
 
-def getPercentile(location, qp, measurement, percentile):
+def getPercentile(qp, measurement, percentile):
     if math.isinf(qp):
         return 0
-    qpInfo = Data[location][qp]
+    qpInfo = Data[LOCATION][qp]
     measurements = qpInfo[measurement]
     measurements.sort()
     index = math.ceil(len(measurements)*percentile)
     value = measurements[index]
     value = np.mean(measurements)
     return value
-
-
-
 
 fillDataStructure()

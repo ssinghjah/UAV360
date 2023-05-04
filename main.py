@@ -36,8 +36,6 @@ while bsX <= SIM_X_END:
         bsY += BS_Y_SPACING
     bsX += BS_X_SPACING
 
-
-
 #BS_LOCATIONs = [ [500, 250, 0],  [500, 250, 0], [500, 500, 0],  [500, 750, 0]]
 # BS_LOCATIONs = [[0, 250, 10], [0, 500, 10], [0, 750, 10], [0, 1000, 10],
 #                 [250, 250, 10], [250, 500, 10], [250, 750, 10], [250, 1000, 10],
@@ -373,10 +371,10 @@ def runSNRTest():
                     pixelsOutside = FR_H*FR_W - pixelsInside
                     for qpi in QPs:
                         for qpo in QPs:
-                            percFrLenI = qpModels.getPercentile("MiamiCity", qpi, "FrameSizes", ALPHA)*(pixelsInside)/(pixelsOutside + pixelsInside)*10.0**3.0*8
-                            percFrLenO = qpModels.getPercentile("MiamiCity", qpo, "FrameSizes", ALPHA)*(pixelsOutside)/(pixelsOutside + pixelsInside)*10.0**3.0*8
-                            percQualI = qpModels.getPercentile("MiamiCity", qpi, "FrameQualities", ALPHA)
-                            percQualO = qpModels.getPercentile("MiamiCity", qpo, "FrameQualities", ALPHA)
+                            percFrLenI = qpModels.getPercentile(qpi, "FrameSizes", ALPHA)*(pixelsInside)/(pixelsOutside + pixelsInside)*10.0**3.0*8
+                            percFrLenO = qpModels.getPercentile(qpo, "FrameSizes", ALPHA)*(pixelsOutside)/(pixelsOutside + pixelsInside)*10.0**3.0*8
+                            percQualI = qpModels.getPercentile(qpi, "FrameQualities", ALPHA)
+                            percQualO = qpModels.getPercentile(qpo, "FrameQualities", ALPHA)
                             for mi in Ms:
                                 for mo in Ms:
                                     ri = getDataRateFromMCS(mi)
@@ -481,10 +479,10 @@ def run():
                     pixelsOutside = FR_H*FR_W - pixelsInside
                     for qpi in QPs:
                         for qpo in QPs:
-                            percFrLenI = qpModels.getPercentile("MiamiCity", qpi, "FrameSizes", ALPHA)*(pixelsInside)/(pixelsOutside + pixelsInside)*10.0**3.0*8
-                            percFrLenO = qpModels.getPercentile("MiamiCity", qpo, "FrameSizes", ALPHA)*(pixelsOutside)/(pixelsOutside + pixelsInside)*10.0**3.0*8
-                            percQualI = qpModels.getPercentile("MiamiCity", qpi, "FrameQualities", ALPHA)
-                            percQualO = qpModels.getPercentile("MiamiCity", qpo, "FrameQualities", ALPHA)
+                            percFrLenI = qpModels.getPercentile(qpi, "FrameSizes", ALPHA)*(pixelsInside)/(pixelsOutside + pixelsInside)*10.0**3.0*8
+                            percFrLenO = qpModels.getPercentile(qpo, "FrameSizes", ALPHA)*(pixelsOutside)/(pixelsOutside + pixelsInside)*10.0**3.0*8
+                            percQualI = qpModels.getPercentile(qpi, "FrameQualities", ALPHA)
+                            percQualO = qpModels.getPercentile(qpo, "FrameQualities", ALPHA)
                             for mi in Ms:
                                 for mo in Ms:
                                     ri = getDataRateFromMCS(mi)
