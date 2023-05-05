@@ -1,4 +1,7 @@
-function errors = calculateFitError(xs, ys, fitType, fitCoeffs)
+function [absErrors, relErrors] = calculateFitError(xs, ys, fitType, fitCoeffs)
+    if numel(fitCoeffs) == 2
+        fitCoeffs = [fitCoeffs, 0, 0];
+    end
     fitYs = [];
     for x = xs
         if (strcmp(fitType, 'exponential'))
@@ -9,5 +12,6 @@ function errors = calculateFitError(xs, ys, fitType, fitCoeffs)
             fitYs = [fitYs; fitY];
         end
     end
-    errors = (fitYs - ys)./ys;
+    relErrors = (fitYs - ys)./ys;
+    absErrors = abs(fitYs - ys);
 end 
