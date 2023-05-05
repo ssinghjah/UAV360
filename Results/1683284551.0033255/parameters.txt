@@ -1,0 +1,13 @@
+FPS = 30
+ Center freq  = 28000000000.0
+ Bandwidth  = 4000000000.0
+ P_UAV = 1
+ Alpha = 0.95
+ THETA_H_PRIMES = [ 15  30  45  60  75  90 105 120 135 150 165]
+ PHI_N_PRIMES = [15 30 45 60 75]
+ PHI_S_PRIMES = [-90 -75 -60 -45 -30]
+ QPs = [20]
+ Ms = [16]
+ Center weight = 0.75
+ Peripheral weight = 0.2
+ Outside Peripheral Weight = 0.05

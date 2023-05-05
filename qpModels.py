@@ -6,9 +6,9 @@ import numpy as np
 Data = {}
 
 QPs = np.arange(10, 55, 5)
-Locations = ["LakeHibara"]
+Locations = ["Zurich"]
 RootPath = "./Results/Models/"
-LOCATION = "LakeHibara"
+LOCATION = "Zurich"
 
 def readCSV(fileName):
     csvData = []
