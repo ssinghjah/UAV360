@@ -6,9 +6,9 @@ import numpy as np
 Data = {}
 
 QPs = np.arange(10, 55, 5)
-Locations = ["Chicago"]
+Locations = ["LakeHibara"]
 RootPath = "./Results/Models/"
-LOCATION = "Chicago"
+LOCATION = "LakeHibara"
 
 def readCSV(fileName):
     csvData = []
@@ -53,7 +53,7 @@ def getPercentile(qp, measurement, percentile):
     value = measurements[index]
     return value
 
-def getExpectedValue(qp, measurement, percentile):
+def getExpectedValue(qp, measurement):
     if math.isinf(qp):
         return 0
     qpInfo = Data[LOCATION][qp]
