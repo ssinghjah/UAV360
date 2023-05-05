@@ -1,18 +1,50 @@
-grid  on;
+% grid  on;
+% close all;
+% rootFolder = './Results/Models/';
+% locations = {'Chicago', 'Lucerne', 'SanFrancisco', 'Zurich', 'BryanskForest', 'Hawaii', 'HuangshanChina', 'LakeHibara'};
+% FPSs = [30, 24, 30, 30, 30, 30, 50, 30];
+% 
+% QPs = 10:5:50;
+% % colors = {'#0072BD', '#EDB120'};
+% % lineStyles = {'--','-'};
+% locationCounter = 1;
+% 
+% for location = locations
+%     meanPSNRs = [];
+%     meanRates = [];
+%     for qp = QPs
+%         psnrFName = strcat(rootFolder, char(location), '_frameSNRs_QP_', num2str(qp), '.csv');
+%         psnrs = csvread(psnrFName);
+% 
+%         lenFName = strcat(rootFolder, char(location), '_frameSizes_QP_', num2str(qp), '.csv');
+%         lens = csvread(lenFName);
+% 
+%         duration = numel(lens)/FPSs(locationCounter);
+%         rate = sum(lens)*8 / (duration*10^6);
+% 
+%         meanRates = [meanRates, rate];
+%         meanPSNRs = [meanPSNRs, mean(psnrs)];
+%     end
+%     plot(meanRates, meanPSNRs, 'LineWidth', 2, 'DisplayName', char(location));
+%     hold on;
+%     locationCounter = locationCounter + 1;
+% end
+% 
+% xlabel("Bit rate (Mbps)");
+% ylabel("Encoded frame quality, in Y-PSNR (dB)");
+% set(gca, 'FontSize', 22);
+% legend show;
 close all;
-rootFolder = './Results/Models/';
-locations = {'Chicago', 'BryanskForest'};
-QPs = 10:10:50;
-colors = {'#0072BD', '#EDB120'};
-lineStyles = {'--','-'};
+locations = {'Chicago', 'HuangshanChina'};
 locationCounter = 1;
+QPs = 10:10:50
 for location = locations
     color = char(colors(locationCounter));
     lineStyle = char(lineStyles(locationCounter));
     for QP = QPs
        fName = strcat(rootFolder, char(location), '_frameSizes_QP_', num2str(QP), '.csv')
        frameSizes = csvread(fName);
-       % frameSizes = frameSizes./10^3;
+       frameSizes = frameSizes./10^6;
        [f, x] = ecdf(frameSizes); 
        displayName = strcat(char(location), ', QP=', num2str(QP));
        plot(x, f, 'Color', color, 'LineStyle', lineStyle ,'LineWidth', 3, 'DisplayName', displayName);
@@ -22,6 +54,40 @@ for location = locations
 end
 
 grid on;
+xlabel('Encoded frame size (megabytes)');
+ylabel('CDF of encoded frame size');
+
+% xlabel('Y-PSNR of the encoded frame (dB)');
+% ylabel('CDF of Y-PSNR');
+legend show;
+set(gca, 'FontSize', 26);
+% % 
+
+
+% for location = locations
+%     color = char(colors(locationCounter));
+%     lineStyle = char(lineStyles(locationCounter));
+%     for QP = QPs
+%        fName = strcat(rootFolder, char(location), '_frameSNRs_QP_', num2str(QP), '.csv')
+%        frameSizes = csvread(fName);
+%        % frameSizes = frameSizes./10^6;
+%        [f, x] = ecdf(frameSizes); 
+%        displayName = strcat(char(location), ', QP=', num2str(QP));
+%        plot(x, f, 'Color', color, 'LineStyle', lineStyle ,'LineWidth', 3, 'DisplayName', displayName);
+%        hold on;
+%     end
+%     locationCounter = locationCounter + 1;
+% end
+% 
+% grid on;
+% xlabel('Encoded frame size (megabytes)');
+% ylabel('CDF of encoded frame size');
+
+% xlabel('Y-PSNR of the encoded frame (dB)');
+% ylabel('CDF of Y-PSNR');
+legend show;
+% % 
+
 
 % % fileNames = {'./frameSizes_Chicago_5.csv'
 % % './frameSizes_Chicago_15.csv', 

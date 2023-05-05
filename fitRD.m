@@ -1,12 +1,13 @@
 close all;
-QPs = 5:5:50;
-locations = {'MiamiCity', 'AngelFalls'};
-root = './Release/';
-numFrames = 4975;
+QPs = 10:10:50;
+locations = {'Chicago'};
+root = './Results/Models/';
+numFrames = 2;
 iIndices = 1:50:4975;
 iIndicesLogical = ismember(1:4975, iIndices);
-
+type = 'SNRs';
 figure;
+
 for location = locations
     
     means = [];
@@ -24,13 +25,15 @@ for location = locations
     expCoeffs = [];
 
     for qp = QPs
-        fName = char(strcat(root, location, '/frameSNRs_QP_', num2str(qp), '.csv'));
-        distribution = csvread(fName)./10^3;
+        fName = char(strcat(root, location, '_frameSNRs_QP_', num2str(qp), '.csv'));
+        distribution = csvread(fName);
+        iIndices = 1:50:numel(distribution);
+        iIndicesLogical = ismember(1:numel(distribution), iIndices);
         distribution(distribution == inf) = [];
         iDistribution = distribution(iIndices);
-        csvwrite(char(strcat(root, location, '/i_frameSNRs_QP_', num2str(qp), '.csv')), iDistribution)
+        csvwrite(char(strcat(root, location, '_i_frameSNRs_QP_', num2str(qp), '.csv')), iDistribution)
         nonIDistribution = distribution(~iIndicesLogical);
-        csvwrite(char(strcat(root, location, '/non_i_frameSNRs_QP_', num2str(qp), '.csv')), nonIDistribution)
+        csvwrite(char(strcat(root, location, '_non_i_frameSNRs_QP_', num2str(qp), '.csv')), nonIDistribution)
         
         meanIVal = mean(iDistribution);
         perc95IVal = prctile(iDistribution, 95);
@@ -54,63 +57,77 @@ for location = locations
         
     end
     
-    csvwrite(char(strcat(root, location, '/frameSNRs_mean.csv')), means);
+    csvwrite(char(strcat(root, location, '_frameSNRs_mean.csv')), means);
+
     f=fit(QPs', means, 'exp2');
     expCoeffs = [expCoeffs; coeffvalues(f)];
-    calculateFitError(QPs, means, 'exponential', coeffvalues(f));
+    [absErrors, relErrors] = calculateFitError(QPs, means, 'exponential', coeffvalues(f));
+    mean(absErrors)
     
+    f=fit(QPs', means, 'exp1');
+    [absErrors, relErrors] = calculateFitError(QPs, means, 'exponential', coeffvalues(f));
+    mean(absErrors)
+    
+
     f=fit(QPs', means, 'power2');
-    calculateFitError(QPs, means, 'power', coeffvalues(f));
+    [absErrors, relErrors] = calculateFitError(QPs, means, 'power', coeffvalues(f));
+    mean(absErrors)
+
+    f=fit(QPs', means, 'power1');
+    [absErrors, relErrors] = calculateFitError(QPs, means, 'power', coeffvalues(f));
+    mean(absErrors)
+
+
     plot(QPs, means);
     hold on;
     
-    csvwrite(char(strcat(root, location, '/frameSNRs_perc95.csv')), perc95s);
+    csvwrite(char(strcat(root, location, '_frameSNRs_perc95.csv')), perc95s);
     f=fit(QPs', perc95s, 'exp2');
     expCoeffs = [expCoeffs; coeffvalues(f)];
     plot(QPs, perc95s);
     hold on;
     
-    csvwrite(char(strcat(root, location, '/frameSNRs_perc99.csv')), perc99s);
+    csvwrite(char(strcat(root, location, '_frameSNRs_perc99.csv')), perc99s);
     f=fit(QPs', perc99s, 'exp2');
     expCoeffs = [expCoeffs; coeffvalues(f)];
 %     plot(QPs, perc99s);
 %     hold on;
     
-    csvwrite(char(strcat(root, location, '/i_frameSNRs_mean.csv')), meanIs);
+    csvwrite(char(strcat(root, location, '_i_frameSNRs_mean.csv')), meanIs);
     f=fit(QPs', meanIs, 'exp2');
     expCoeffs = [expCoeffs; coeffvalues(f)];
 %     plot(QPs, meanIs);
 %     hold on;
     
-    csvwrite(char(strcat(root, location, '/i_frameSNRs_perc95.csv')), perc95Is);
+    csvwrite(char(strcat(root, location, '_i_frameSNRs_perc95.csv')), perc95Is);
     f = fit(QPs', perc95Is, 'exp2');
     expCoeffs = [expCoeffs; coeffvalues(f)];
 %     plot(QPs, perc95Is);
 %     hold on;
     
-    csvwrite(char(strcat(root, location, '/i_frameSNRs_perc99.csv')), perc99Is);
+    csvwrite(char(strcat(root, location, '_i_frameSNRs_perc99.csv')), perc99Is);
     f = fit(QPs', perc99Is, 'exp2');
     expCoeffs = [expCoeffs; coeffvalues(f)];
 %     plot(QPs, perc99Is);
 %     hold on;
     
-    csvwrite(char(strcat(root, location, '/non_i_frameSNRs_mean.csv')), meanNonIs);
+    csvwrite(char(strcat(root, location, '_non_i_frameSNRs_mean.csv')), meanNonIs);
     f = fit(QPs', meanNonIs, 'exp2');
     expCoeffs = [expCoeffs; coeffvalues(f)];
 %     plot(QPs, meanNonIs);
 %     hold on;
     
-    csvwrite(char(strcat(root, location, '/non_i_frameSNRs_perc95.csv')), perc95nonIs);
+    csvwrite(char(strcat(root, location, '_non_i_frameSNRs_perc95.csv')), perc95nonIs);
     f = fit(QPs', perc95nonIs, 'exp2');
     expCoeffs = [expCoeffs; coeffvalues(f)];
 %     plot(QPs, perc95nonIs);
 %     hold on;
 %     
-    csvwrite(char(strcat(root, location, '/non_i_frameSNRs_QP_perc99.csv')), perc99nonIs);
+    csvwrite(char(strcat(root, location, '_non_i_frameSNRs_QP_perc99.csv')), perc99nonIs);
     f = fit(QPs', perc99nonIs, 'exp2');
     expCoeffs = [expCoeffs; coeffvalues(f)];
 %     plot(QPs, perc99nonIs);
 %     hold on;
     
-    csvwrite(char(strcat(root, location, '/expCoefficients.csv')), expCoeffs);
+    csvwrite(char(strcat(root, location, '_expCoefficients.csv')), expCoeffs);
 end
