@@ -43,9 +43,10 @@ while bsX <= SIM_X_END:
 #                 [750, 250, 10], [750, 500, 10], [750, 750, 10], [750, 1000, 10],
 #                 [1000, 250, 10],  [1000, 250, 10], [1000, 500, 10], [1000, 750, 10]]
 QPs = [10, 20, 40, 50]
-# QPs = [20]
+#QPs = [50]
 Ms = [4, 16, 64, 256]
-#Ms = [16]
+#Ms = [256]
+FNAME_SUFFIX = "LakeHibara_Adaptive"
 
 
 ALPHA = 0.95
@@ -59,6 +60,7 @@ FR_W = 3840
 # FOV_THETA = 190
 # FOV_PHI = 120
 
+GOP = 50
 FOV_CENTRAL_THETA_E = 30
 FOV_CENTRAL_THETA_W = -30
 FOV_CENTRAL_PHI_N = 30
@@ -84,6 +86,19 @@ CODE_RATE = 1/3
 # THETA_H_PRIMES = [60]
 # PHI_N_PRIMES = [60]
 # PHI_S_PRIMES = [-75]
+
+
+def getQPABR(prevGoPDR):
+    chosenQP = 50
+    for qp in QPs:
+        # get qpDR
+        qpDR = qpModels.getExpectedValue(qp, "FrameSizes")
+        # if qpDR < prevGoPDR, return
+        if qpDR < prevGoPDR:
+            chosenQP = qp
+            break
+    return chosenQP
+
 
 
 def qFunc(arg):
@@ -346,17 +361,17 @@ def calculateMetric(thetaHPrime, thetaP, thetaPMean, thetaPStd, phiSPrime, phiNP
 
     #nonFoVArea = 360.0*180.0 - fovArea
 
-    viewPortPrimeAreaInsideCentral = getAreaInside([-thetaHPrime, thetaHPrime,
-                                                    phiSPrime, phiNPrime],
+    viewPortPrimeAreaInsideCentral = getAreaInside([thetaP-thetaHPrime, thetaP+thetaHPrime,
+                                                    phiP + phiSPrime,  phiP + phiNPrime],
                                                    [thetaP + FOV_CENTRAL_THETA_W, thetaP + FOV_CENTRAL_THETA_E,
                                                     phiP + FOV_CENTRAL_PHI_S, phiP + FOV_CENTRAL_PHI_N])
 
-    viewPortPrimeAreaInsidePeripheral = getAreaInside([-thetaHPrime, thetaHPrime,
-                                                       phiSPrime, phiNPrime],
+    viewPortPrimeAreaInsidePeripheral = getAreaInside([thetaP-thetaHPrime, thetaP+thetaHPrime,
+                                                       phiP + phiSPrime, phiP + phiNPrime],
                                                       [thetaP + fovPeripheralWStretched, thetaP + fovPeripheralEStretched,
                                                        phiP + fovPeripheralSStretched, phiP + fovPeriperhalNStrechted])
 
-    viewPortPrimeAreaOutsidePeripheral = viewportPrimeArea - viewPortPrimeAreaInsidePeripheral
+    viewPortPrimeAreaOutsidePeripheral = max(viewportPrimeArea - viewPortPrimeAreaInsidePeripheral, 0)
 
     qualityInsideCentral = viewPortPrimeAreaInsideCentral*qualI/fovCentralArea + (fovCentralArea - viewPortPrimeAreaInsideCentral)*qualO/fovCentralArea
     qualityInsidePeripheral = (viewPortPrimeAreaInsidePeripheral - viewPortPrimeAreaInsideCentral)*qualI/(fovPeripheralArea - fovCentralArea) + (fovPeripheralArea - fovCentralArea - viewPortPrimeAreaInsidePeripheral + viewPortPrimeAreaInsideCentral)*qualO/(fovPeripheralArea - fovCentralArea)
@@ -367,11 +382,215 @@ def calculateMetric(thetaHPrime, thetaP, thetaPMean, thetaPStd, phiSPrime, phiNP
     return metric
 
 
+def runSNRTestABR2():
+    bestMetrics = []
+    bestParameterCombinations = []
+    snrs = np.arange(0, 40, 1.0)  # dB
+    snrsStretched = []
+    for snr in snrs:
+        for i in range(30):
+            snrsStretched.append(snr)
+
+    pilotViewingDirections = generatePilotViewingAngles(len(snrsStretched))
+    # pilotViewingDirections = [[33.98, 0], [-10.75, -39.1]]
+    phiPHistory = []
+    thetaPHistory = []
+    tick = 0
+    thetaPMean = 0
+    phiPMean = 0
+    thetaPStd = 0
+    phiPStd = 0
+    prevGoPBitsRx = 0
+    qp = getQPABR(prevGoPBitsRx*FPS/(GOP))
+    frameCount = 1
+    for snr in snrsStretched:
+        if frameCount % GOP == 0:
+            qp = getQPABR(prevGoPBitsRx*FPS/(GOP))
+            prevGoPBitsRx = 0
+            print(qp)
+        frameCount += 1
+        snrNondB = 10.0 ** (0.1 * snr)
+        pilotViewingAngle = pilotViewingDirections[tick]
+        thetaP = pilotViewingAngle[0]
+        phiP = pilotViewingAngle[1]
+        thetaPHistory.append(thetaP)
+        phiPHistory.append(phiP)
+
+        m = getMCS5G(snr)
+
+        if len(thetaPHistory) > GAUSSIAN_MINIMUM:
+            thetaPMean = np.mean(thetaPHistory)
+            thetaPStd = np.std(thetaPHistory)
+
+        if len(phiPHistory) > GAUSSIAN_MINIMUM:
+            phiPMean = np.mean(phiPHistory)
+            phiPStd = np.std(phiPHistory)
+
+        bestMetric = -1
+        bestParameterCombination = []
+        start = time.time()
+        # thetaHPrime = 60
+        # phiNPrime = 60
+        # phiSPrime = -75
+        bitsReceived = 0
+        for thetaHPrime in THETA_H_PRIMES:
+            print(thetaHPrime)
+            for phiNPrime in PHI_N_PRIMES:
+                for phiSPrime in PHI_S_PRIMES:
+                    pixelsInside = (2.0 * thetaHPrime * FR_W / 360.0) * (math.fabs(phiNPrime - phiSPrime) *FR_H/ 180.0)
+                    pixelsOutside = FR_H * FR_W - pixelsInside
+                    percFrLenI = qpModels.getExpectedValue(qp, "FrameSizes") * (pixelsInside) / (
+                                pixelsOutside + pixelsInside) * 8
+                    percFrLenO = 0
+                    percQualI = qpModels.getExpectedValue(qp, "FrameQualities")
+                    percQualO = 0
+                    r = getDataRateFromMCS(m) * CODE_RATE
+                    #ro = getDataRateFromMCS(m) * CODE_RATE
+
+                    FrLatency = percFrLenI /r
+
+                    if FrLatency >= 1.0 / FPS:
+                        continue
+
+                    # Check if FrLatency meets the constraint
+                    berI = getBER5GNR(snr, m)
+                    berO = getBER5GNR(snr, m)
+
+                    # Check if the probability of reception meets the constraint
+                    prReceived = ((1 - berI) ** percFrLenI) * ((1 - berO) ** percFrLenO)
+
+                    if prReceived <= ALPHA:
+                        continue
+
+                    metric = calculateMetric(thetaHPrime, thetaP, thetaPMean, thetaPStd, phiSPrime,
+                                             phiNPrime, phiP, phiPMean, phiPStd, percQualI, percQualO)
+                    if metric > bestMetric:
+                        bestMetric = metric
+                        bestParameterCombination = [thetaHPrime, phiNPrime, phiSPrime, qp, 0, m, 0]
+                        bitsReceived = prReceived * percFrLenI
+
+        prevGoPBitsRx += bitsReceived
+        end = time.time()
+        print("Elapsed time: " + str(end - start))
+        bestMetrics.append(bestMetric)
+        print(bestMetric)
+        bestParameterCombinations.append(bestParameterCombination)
+        print(bestParameterCombination)
+        print("SNR: ")
+        print(snr)
+        print("---------")
+        tick += 1
+
+    return bestMetrics, bestParameterCombinations, pilotViewingDirections, snrs
+
+
+def runSNRTestABR():
+    bestMetrics = []
+    bestParameterCombinations = []
+    snrs = np.arange(0, 40, 1.0)  # dB
+    snrsStretched = []
+    for snr in snrs:
+        for i in range(30):
+            snrsStretched.append(snr)
+
+    pilotViewingDirections = generatePilotViewingAngles(len(snrsStretched))
+    # pilotViewingDirections = [[33.98, 0], [-10.75, -39.1]]
+    phiPHistory = []
+    thetaPHistory = []
+    tick = 0
+    thetaPMean = 0
+    phiPMean = 0
+    thetaPStd = 0
+    phiPStd = 0
+    prevGoPBitsRx = 0
+    qp = getQPABR(prevGoPBitsRx*FPS/(GOP))
+    frameCount = 1
+    for snr in snrsStretched:
+        if frameCount % GOP == 0:
+            qp = getQPABR(prevGoPBitsRx*FPS/(GOP))
+            prevGoPBitsRx = 0
+            print(qp)
+        frameCount += 1
+        snrNondB = 10.0 ** (0.1 * snr)
+        pilotViewingAngle = pilotViewingDirections[tick]
+        thetaP = pilotViewingAngle[0]
+        phiP = pilotViewingAngle[1]
+        thetaPHistory.append(thetaP)
+        phiPHistory.append(phiP)
+
+        m = getMCS5G(snr)
+
+        if len(thetaPHistory) > GAUSSIAN_MINIMUM:
+            thetaPMean = np.mean(thetaPHistory)
+            thetaPStd = np.std(thetaPHistory)
+
+        if len(phiPHistory) > GAUSSIAN_MINIMUM:
+            phiPMean = np.mean(phiPHistory)
+            phiPStd = np.std(phiPHistory)
+
+        bestMetric = -1
+        bestParameterCombination = []
+        start = time.time()
+        thetaHPrime = 60
+        phiNPrime = 60
+        phiSPrime = -75
+        # for thetaHPrime in THETA_H_PRIMES:
+        #     print(thetaHPrime)
+        #     for phiNPrime in PHI_N_PRIMES:
+        #         for phiSPrime in PHI_S_PRIMES:
+        pixelsInside = (2.0 * thetaHPrime * FR_W / 360.0) * (math.fabs(phiNPrime - phiSPrime) *FR_H/ 180.0)
+        pixelsOutside = FR_H * FR_W - pixelsInside
+        percFrLenI = qpModels.getExpectedValue(qp, "FrameSizes") * (pixelsInside) / (
+                    pixelsOutside + pixelsInside) * 8
+        percFrLenO = 0
+        percQualI = qpModels.getExpectedValue(qp, "FrameQualities")
+        percQualO = 0
+        r = getDataRateFromMCS(m) * CODE_RATE
+        #ro = getDataRateFromMCS(m) * CODE_RATE
+
+        FrLatency = percFrLenI /r
+
+        if FrLatency >= 1.0 / FPS:
+            continue
+
+        # Check if FrLatency meets the constraint
+        berI = getBER5GNR(snr, m)
+        berO = getBER5GNR(snr, m)
+
+        # Check if the probability of reception meets the constraint
+        prReceived = ((1 - berI) ** percFrLenI) * ((1 - berO) ** percFrLenO)
+        bitsReceived = prReceived*percFrLenI
+        prevGoPBitsRx += bitsReceived
+
+        if prReceived <= ALPHA:
+            continue
+
+        metric = calculateMetric(thetaHPrime, thetaP, thetaPMean, thetaPStd, phiSPrime,
+                                 phiNPrime, phiP, phiPMean, phiPStd, percQualI, percQualO)
+        if metric > bestMetric:
+            bestMetric = metric
+            bestParameterCombination = [thetaHPrime, phiNPrime, phiSPrime, qp, 0, m, 0]
+
+        end = time.time()
+        print("Elapsed time: " + str(end - start))
+        bestMetrics.append(bestMetric)
+        print(bestMetric)
+        bestParameterCombinations.append(bestParameterCombination)
+        print(bestParameterCombination)
+        print("SNR: ")
+        print(snr)
+        print("---------")
+        tick += 1
+
+    return bestMetrics, bestParameterCombinations, pilotViewingDirections, snrs
+
+
 def runSNRTest():
     bestMetrics = []
     bestParameterCombinations = []
     snrs = np.arange(0, 40, 1.0) # dB
     snrsStretched = []
+    prevGoPThroughput = 0
     for snr in snrs:
         for i in range(30):
             snrsStretched.append(snr)
@@ -385,7 +604,8 @@ def runSNRTest():
     phiPMean = 0
     thetaPStd = 0
     phiPStd = 0
-
+    prevGoPThroughput = 0
+    frameCount = 1
     for snr in snrsStretched:
         snrNondB = 10.0 ** (0.1 * snr)
         pilotViewingAngle = pilotViewingDirections[tick]
@@ -409,14 +629,14 @@ def runSNRTest():
             print(thetaHPrime)
             for phiNPrime in PHI_N_PRIMES:
                 for phiSPrime in PHI_S_PRIMES:
-                    pixelsInside = (2.0*thetaHPrime*FR_W/360.0)*(math.fabs(phiNPrime - phiSPrime)/180.0)
+                    pixelsInside = (2.0*thetaHPrime*FR_W/360.0)*(math.fabs(phiNPrime - phiSPrime)*FR_H/180.0)
                     pixelsOutside = FR_H*FR_W - pixelsInside
                     for qpi in QPs:
                         for qpo in QPs:
-                            percFrLenI = qpModels.getExpectedValue(qpi, "FrameSizes", ALPHA)*(pixelsInside)/(pixelsOutside + pixelsInside)*10.0**3.0*8
-                            percFrLenO = qpModels.getExpectedValue(qpo, "FrameSizes", ALPHA)*(pixelsOutside)/(pixelsOutside + pixelsInside)*10.0**3.0*8
-                            percQualI = qpModels.getExpectedValue(qpi, "FrameQualities", ALPHA)
-                            percQualO = qpModels.getExpectedValue(qpo, "FrameQualities", ALPHA)
+                            percFrLenI = qpModels.getExpectedValue(qpi, "FrameSizes")*(pixelsInside)/(pixelsOutside + pixelsInside)*8
+                            percFrLenO = qpModels.getExpectedValue(qpo, "FrameSizes")*(pixelsOutside)/(pixelsOutside + pixelsInside)*8
+                            percQualI = qpModels.getExpectedValue(qpi, "FrameQualities")
+                            percQualO = qpModels.getExpectedValue(qpo, "FrameQualities")
                             for mi in Ms:
                                 for mo in Ms:
 
@@ -487,8 +707,8 @@ def main():
     logParameters(resultsDir)
     bestMetrics, bestParameters, pilotViewingAngles, snrs = runSNRTest()
     #bestMetrics, bestParameters = run()
-    writeCSV(resultsDir + 'bestMetrics_Alpha_SNR_Test_Lucerne' + str(ALPHA) + '.csv', bestMetrics)
-    writeCSV(resultsDir + 'bestParameters_Alpha_SNR_Test_Lucerne' + str(ALPHA) + '.csv', bestParameters)
+    writeCSV(resultsDir + 'bestMetrics_Alpha_SNR_Test_' + FNAME_SUFFIX  + '.csv', bestMetrics)
+    writeCSV(resultsDir + 'bestParameters_Alpha_SNR_Test_' + FNAME_SUFFIX + '.csv', bestParameters)
     # writeCSV(resultsDir + 'snrs_Alpha' + str(ALPHA) + '.csv', snrs)
     # evaluationMetrics = evaluateResults(bestParameters, pilotViewingAngles)
     # writeCSV('evalMetrics_Alpha' + str(ALPHA) + '_' + str(time.time()) + '.csv', bestMetrics)
