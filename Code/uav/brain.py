@@ -1,14 +1,25 @@
 import numpy as np
 import math
 import qp_models
-from settings import *
-from qoe import *
+import time
+
+# from settings import *
+# from qoe import *
 
 
 THETA_H_PRIMES = np.arange(15, 180, 15)
 PHI_N_PRIMES = np.arange(15, 90, 15)
 PHI_S_PRIMES = np.arange(-90, -15, 15)
 
+def get_parameters():
+    qp_i = 20
+    qp_o = 20
+    m_i = 2
+    m_o = 2
+    theta_h = 60
+    theta_n = 20
+    theta_s = 60
+    return {"theta_h": theta_h,"theta_n": theta_n, "theta_s": theta_s,"qp_i": qp_i, "qp_o": qp_o, "m_i": m_i, "m_o": m_o, "optimization_timestamp": time.time()}
 
 def getDataRateFromMCS(mod):
     dataRate = B*math.log2(mod)/2.0;
@@ -24,7 +35,7 @@ def predictBER(channelSNR, dataRate, M):
     ber *= summation
     return ber
 
-def exhaustiveSearch(snr):
+def _exhaustiveSearch(snr):
     for thetaHPrime in THETA_H_PRIMES:
         print(thetaHPrime)
         for phiNPrime in PHI_N_PRIMES:
