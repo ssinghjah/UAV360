@@ -19,7 +19,7 @@ def get_parameters():
     theta_h = 60
     theta_n = 20
     theta_s = 60
-    return {"theta_h": theta_h,"theta_n": theta_n, "theta_s": theta_s,"qp_i": qp_i, "qp_o": qp_o, "m_i": m_i, "m_o": m_o, "optimization_timestamp": time.time()}
+    return {"theta_h": theta_h,"phi_n": theta_n, "phi_s": theta_s,"qp_i": qp_i, "qp_o": qp_o, "m_i": m_i, "m_o": m_o, "optimization_timestamp": time.time()}
 
 def getDataRateFromMCS(mod):
     dataRate = B*math.log2(mod)/2.0;

@@ -5,7 +5,7 @@ def capture():
     return {"raw_frame_size": raw_frame_size, "capture_timestamp": time.time()}
 
 def encode(raw_frame, parameters):
-    # Delay and get encoded frame size as a function of parameters
+    # Add delay and get encoded frame size as a function of encoding parameters
     encoder_delay = 15 # milliseconds
     encoded_frame_size = 100 # kiloytes
     encoded_frame = raw_frame
