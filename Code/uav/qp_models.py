@@ -4,7 +4,7 @@ import math
 
 QPs = np.arange(10, 55, 5)
 Locations = ["MiamiCity", "AngelFalls"]
-RootPath = "./Release/"
+RootPath = "../../Release/"
 Data = {}
 
 def readCSV(fileName):
@@ -26,7 +26,6 @@ def writeCSV(fName, dataArr):
     with open(fName, 'w', newline='\n') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerows(dataArr)
-
 
 def fillDataStructure():
     for location in Locations:
@@ -53,4 +52,4 @@ def getPercentile(location, qp, measurement, percentile):
     value = np.mean(measurements)
     return value
 
-fillDataStructure()
+# fillDataStructure()

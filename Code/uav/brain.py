@@ -12,13 +12,13 @@ PHI_N_PRIMES = np.arange(15, 90, 15)
 PHI_S_PRIMES = np.arange(-90, -15, 15)
 
 def get_parameters():
-    qp_i = 20
-    qp_o = 20
-    m_i = 2
-    m_o = 2
+    qp_i = 10
+    qp_o = 10
+    m_i = 16
+    m_o = 16
     theta_h = 60
     theta_n = 20
-    theta_s = 60
+    theta_s = -60
     return {"theta_h": theta_h,"phi_n": theta_n, "phi_s": theta_s,"qp_i": qp_i, "qp_o": qp_o, "m_i": m_i, "m_o": m_o, "optimization_timestamp": time.time()}
 
 def getDataRateFromMCS(mod):

@@ -18,7 +18,6 @@ def generatePhi():
 def generatePilotViewingAngles(ticks):
     pilotViewingDirections = []
     sigmaH = THETA_H/2.0
-
     prevTheta = 0
     prevPhi = 0
     for tickNum in range(ticks):
